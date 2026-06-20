@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Monitoring SE2026 — BPS Provinsi Lampung</title>
+<style>
+:root{
+  --ink:#13243f;--ink-soft:#41506b;--line:#e4e8f0;--paper:#f4f6fa;--card:#fff;
+  --selesai:#1f9d6b;--menunggu:#e0a020;--proses:#3b74e0;--ditolak:#d8543f;--belum:#cdd5e2;
+  --accent:#1f4fd8;--shadow:0 1px 2px rgba(19,36,63,.06),0 8px 24px rgba(19,36,63,.06);
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px 64px}
+header{background:var(--ink);color:#fff;padding:22px 0 20px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:19px;margin:0;letter-spacing:-.2px;font-weight:700}
+.brand .tag{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9fb1d4;font-weight:600}
+.sub{color:#aebfdd;font-size:12.5px;margin-top:3px}
+.hmeta{margin-top:14px;display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:#c4d2ec}
+.hmeta b{color:#fff}
+#drop{margin:26px 0;border:1.5px dashed #b9c4d8;border-radius:14px;background:var(--card);padding:36px 24px;text-align:center;cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+#drop:hover,#drop.over{border-color:var(--accent);background:#f3f6ff}
+#drop h2{margin:0 0 6px;font-size:16px}#drop p{margin:4px 0;color:var(--ink-soft);font-size:13px}
+#drop .pill{display:inline-block;margin-top:10px;background:var(--accent);color:#fff;padding:9px 18px;border-radius:8px;font-weight:600;font-size:13px}
+.hint{font-size:11.5px;color:#8090ab;margin-top:14px}
+.statusline{text-align:center;font-size:12.5px;color:var(--ink-soft);margin:8px 0 0;min-height:18px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:30px 0 14px;gap:12px;flex-wrap:wrap}
+.bar h3{margin:0;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
+.kpi{background:var(--card);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);border-left:4px solid var(--accent)}
+.kpi.k-sel{border-color:var(--selesai)}.kpi.k-men{border-color:var(--menunggu)}.kpi.k-pro{border-color:var(--proses)}.kpi.k-bel{border-color:var(--belum)}
+.kpi .lab{font-size:11.5px;color:var(--ink-soft);font-weight:600;letter-spacing:.3px}
+.kpi .val{font-size:27px;font-weight:750;margin-top:4px;letter-spacing:-1px}
+.kpi .sub2{font-size:11.5px;color:#8090ab;margin-top:2px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin:6px 0 16px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+.provbar,.chartcard{background:var(--card);border-radius:13px;padding:18px;box-shadow:var(--shadow)}
+.ribbon{display:flex;height:34px;border-radius:7px;overflow:hidden;background:var(--belum)}
+.ribbon i{display:block;height:100%}.ribbon i:hover{filter:brightness(1.08)}
+.tablewrap{background:var(--card);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}
+th{background:#fafbfd;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0}
+th.num,td.num{text-align:right}th:hover{color:var(--accent)}
+tr.kabrow{cursor:pointer}tr.kabrow:hover td{background:#f3f6ff}
+.rank{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;background:var(--paper);border-radius:6px;font-size:11px;font-weight:700;color:var(--ink-soft)}
+.mini{height:9px;border-radius:5px;background:var(--belum);overflow:hidden;display:flex;min-width:90px}
+.mini i{height:100%}
+.pct{font-weight:700}.pct.lo{color:var(--ditolak)}.pct.mid{color:var(--menunggu)}.pct.hi{color:var(--selesai)}
+#drill{display:none;margin-top:14px}
+.dpanel{background:var(--card);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;background:var(--ink);color:#fff;flex-wrap:wrap;gap:10px}
+.dhead h4{margin:0;font-size:15px}
+.dhead .x{cursor:pointer;color:#aebfdd;font-weight:700;font-size:13px;border:1px solid #41506b;padding:5px 11px;border-radius:7px}
+.dhead .x:hover{color:#fff;border-color:#fff}
+.search{margin:14px 18px 4px}
+.search input{width:100%;max-width:340px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit}
+.scroll{max-height:560px;overflow:auto}
+.empty{padding:40px;text-align:center;color:#8090ab}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:#8090ab;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hide{display:none!important}
+.chartcard text{font-family:ui-monospace,monospace}
+.trendsum{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:10px}
+.trendsum div{font-size:12px;color:var(--ink-soft)}
+.trendsum b{display:block;font-size:20px;color:var(--ink);font-weight:750}
+@media print{
+  header{background:#fff;color:#000;border-bottom:2px solid #000}
+  .brand h1,.brand .tag,.sub,.hmeta,.hmeta b{color:#000}
+  #drop,.btn,.dhead .x,.search{display:none!important}
+  .kpi,.provbar,.tablewrap,.dpanel,.chartcard{box-shadow:none;border:1px solid #ccc}
+  .scroll{max-height:none}body{background:#fff}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><span class="tag">BPS Provinsi Lampung</span><h1>Monitoring Progres Lapangan SE2026</h1></div>
+  <div class="sub">Rekap otomatis capaian pencacah berdasarkan status dokumen FASIH-SM</div>
+  <div class="hmeta" id="hmeta"></div>
+</div></header>
+
+<div class="wrap">
+  <div id="drop">
+    <h2>Jatuhkan file CSV hasil tarikan FASIH di sini</h2>
+    <p>File <span class="mono">fasih_pencacah_…_flat_….csv</span> dari bookmarklet — atau muat data tersimpan dari Supabase.</p>
+    <span class="pill">Pilih file</span>
+    <input id="file" type="file" accept=".csv,.xlsx" class="hide"/>
+    <div class="hint">Semua proses di browser Anda. Tombol "Muat dari Supabase" muncul bila URL & key sudah diisi di dalam file.</div>
+  </div>
+  <div class="statusline" id="status"></div>
+
+  <div id="app" class="hide">
+    <div class="bar">
+      <h3>Ringkasan Provinsi</h3>
+      <div>
+        <button class="btn" id="loadsb">Muat dari Supabase</button>
+        <button class="btn" id="pushsb">Kirim ke Supabase</button>
+        <button class="btn" id="exp">Unduh rekap (CSV)</button>
+        <button class="btn solid" id="prn">Cetak / PDF</button>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+
+    <div id="trendsec" class="hide">
+      <div class="bar"><h3>Tren Harian — % Selesai Provinsi</h3></div>
+      <div class="chartcard">
+        <div class="trendsum" id="trendsum"></div>
+        <div id="chart"></div>
+      </div>
+    </div>
+
+    <div class="bar"><h3>Alur Pekerjaan Provinsi</h3></div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--selesai)"></i>Selesai (disetujui)</span>
+      <span><i class="dot" style="background:var(--menunggu)"></i>Menunggu validasi</span>
+      <span><i class="dot" style="background:var(--proses)"></i>Proses (draft)</span>
+      <span><i class="dot" style="background:var(--ditolak)"></i>Ditolak/dikembalikan</span>
+      <span><i class="dot" style="background:var(--belum)"></i>Belum dikerjakan</span>
+    </div>
+    <div class="provbar"><div class="ribbon" id="provrib"></div></div>
+
+    <div class="bar"><h3>Rekap per Kabupaten/Kota — klik baris untuk rincian petugas</h3></div>
+    <div class="tablewrap"><table id="kabtab">
+      <thead><tr>
+        <th>#</th><th data-s="name">Kabupaten/Kota</th>
+        <th class="num" data-s="petugas">Petugas</th><th class="num" data-s="target">Target</th>
+        <th class="num" data-s="selesai">Selesai</th><th class="num" data-s="menunggu">Menunggu</th>
+        <th data-s="pct" style="min-width:160px">Capaian</th><th class="num" data-s="pct">% Selesai</th>
+      </tr></thead><tbody id="kabbody"></tbody>
+    </table></div>
+    <div id="drill"></div>
+  </div>
+
+  <footer><span>Alat bantu monitoring internal — BPS Provinsi Lampung</span><span id="ftright"></span></footer>
+</div>
+
+<script>
+/* ====================================================================
+   KONFIGURASI SUPABASE — isi sekali, lalu host file ini di GitHub Pages
+   --------------------------------------------------------------------
+   SUPABASE_URL & SUPABASE_ANON_KEY : aman dipublikasikan (hanya BACA).
+   SUPABASE_WRITE_KEY (service_role) : RAHASIA. Isi HANYA pada salinan
+       PRIVAT di komputer Anda untuk menekan "Kirim ke Supabase".
+       JANGAN pernah menaruh service_role key di file yang Anda publish.
+   ==================================================================== */
+const SUPABASE_URL       = "https://mzkowjmswqrctuhrlihk.supabase.co";   // contoh: "https://abcd1234.supabase.co"
+const SUPABASE_ANON_KEY  = "sb_publishable_a5IUxg7TQ_LC_T06987HCg_3RBcDXNC;   // anon public key
+const SUPABASE_WRITE_KEY = "sb_secret_t6lvL6PFXRmq8Zsc_Jvm5A_IKOLLn2o";   // service_role key (privat) — kosongkan di versi publik
+
+const KAB = {"01": "LAMPUNG BARAT", "02": "TANGGAMUS", "03": "LAMPUNG SELATAN", "04": "LAMPUNG TIMUR", "05": "LAMPUNG TENGAH", "06": "LAMPUNG UTARA", "07": "WAY KANAN", "08": "TULANG BAWANG", "09": "PESAWARAN", "10": "PRINGSEWU", "11": "MESUJI", "12": "TULANG BAWANG BARAT", "13": "PESISIR BARAT", "71": "BANDAR LAMPUNG", "72": "METRO"};
+const KEC = {"01042": "LUMBOK SEMINUNG", "01055": "BATU KETULIS", "01040": "BALIK BUKIT", "01041": "SUKAU", "01050": "BELALAU", "01051": "SEKINCAU", "01052": "SUOH", "01053": "BATU BRAK", "01054": "PAGAR DEWA", "01056": "BANDAR NEGERI SUOH", "01060": "SUMBER JAYA", "01061": "WAY TENONG", "01063": "KEBUN TEBU", "01064": "AIR HITAM", "01062": "GEDUNG SURIAN", "02111": "KELUMBAYAN", "02022": "KOTA AGUNG TIMUR", "02113": "KELUMBAYAN BARAT", "02041": "SUMBEREJO", "02110": "CUKUH BALAK", "02040": "TALANG PADANG", "02101": "BULOK", "02010": "WONOSOBO", "02012": "BANDAR NEGERI SEMUONG", "02043": "GUNUNG ALIP", "02020": "KOTA AGUNG", "02050": "PUGUNG", "02042": "GISTING", "02112": "LIMAU", "02023": "KOTA AGUNG BARAT", "02032": "AIR NANINGAN", "02031": "ULUBELU", "02030": "PULAU PANGGUNG", "02021": "PEMATANG SAWA", "02011": "SEMAKA", "03060": "NATAR", "03120": "PALAS", "03090": "KATIBUNG", "03100": "SIDOMULYO", "03070": "JATI AGUNG", "03121": "SRAGI", "03111": "RAJABASA", "03130": "PENENGAHAN", "03101": "CANDIPURO", "03091": "MERBAU MATARAM", "03081": "TANJUNG SARI", "03102": "WAY PANJI", "03080": "TANJUNG BINTANG", "03131": "KETAPANG", "03110": "KALIANDA", "03132": "BAKAUHENI", "03092": "WAY SULAN", "04071": "MATARAM BARU", "04010": "METRO KIBANG", "04030": "SEKAMPUNG", "04040": "MARGATIGA", "04050": "SEKAMPUNG UDIK", "04060": "JABUNG", "04062": "WAWAY KARYA", "04081": "BRAJA SLEBAH", "04074": "GUNUNG PELINDUNG", "04092": "BATANGHARI NUBAN", "04091": "BUMI AGUNG", "04082": "LABUHAN RATU", "04090": "SUKADANA", "04070": "LABUHAN MARINGGAI", "04072": "BANDAR SRIBHAWONO", "04073": "MELINTING", "04120": "PURBOLINGGO", "04063": "MARGA SEKAMPUNG", "04100": "PEKALONGAN", "04110": "RAMAN UTARA", "04121": "WAY BUNGUR", "04020": "BATANGHARI", "04061": "PASIR SAKTI", "04080": "WAY JEPARA", "05120": "RUMBIA", "05070": "SEPUTIH RAMAN", "05082": "WAY PENGUBUAN", "05020": "KALIREJO", "05101": "BANDAR MATARAM", "05122": "PUTRA RUMBIA", "05040": "GUNUNG SUGIH", "05010": "PADANG RATU", "05080": "TERBANGGI BESAR", "05061": "KOTA GAJAH", "05013": "ANAK TUHA", "05110": "SEPUTIH BANYAK", "05050": "TRIMURJO", "05014": "ANAK RATU AJI", "05011": "SELAGAI LINGGA", "05030": "BANGUNREJO", "05060": "PUNGGUR", "05081": "SEPUTIH AGUNG", "05121": "BUMI NABUNG", "05090": "TERUSAN NUNYAI", "05041": "BEKRI", "05042": "BUMI RATU NUBAN", "05012": "PUBIAN", "05130": "SEPUTIH SURABAYA", "05100": "SEPUTIH MATARAM", "05111": "WAY SEPUTIH", "05021": "SENDANG AGUNG", "05131": "BANDAR SURABAYA", "06082": "SUNGKAI TENGAH", "06080": "SUNGKAI UTARA", "06042": "KOTABUMI SELATAN", "06040": "KOTABUMI", "06010": "BUKIT KEMUNING", "06031": "ABUNG TENGAH", "06032": "ABUNG  KUNANG", "06050": "ABUNG SELATAN", "06072": "BUNGA MAYANG", "06051": "ABUNG SEMULI", "06020": "TANJUNG RAJA", "06033": "ABUNG PEKURUN", "06070": "SUNGKAI SELATAN", "06030": "ABUNG BARAT", "06060": "ABUNG TIMUR", "06074": "SUNGKAI JAYA", "06011": "ABUNG TINGGI", "06073": "SUNGKAI  BARAT", "06052": "BLAMBANGAN PAGAR", "06061": "ABUNG SURAKARTA", "06041": "KOTABUMI UTARA", "06081": "HULUSUNGKAI", "06071": "MUARA SUNGKAI", "07060": "PAKUAN RATU", "07010": "BANJIT", "07021": "GUNUNG LABUHAN", "07030": "KASUI", "07031": "REBANG TANGKAS", "07043": "UMPU SEMENGUK", "07052": "BUMI AGUNG", "07061": "NEGARA BATIN", "07042": "NEGERI AGUNG", "07050": "BAHUGA", "07040": "BLAMBANGAN UMPU", "07020": "BARADATU", "07041": "WAY TUBA", "07051": "BUAY  BAHUGA", "07062": "NEGERI BESAR", "08056": "GEDUNG AJI BARU", "08030": "BANJAR AGUNG", "08052": "RAWAJITU SELATAN", "08053": "GEDUNG MENENG", "08054": "RAWAJITU TIMUR", "08055": "RAWA PITU", "08057": "DENTE TELADAS", "08058": "MENGGALA TIMUR", "08031": "BANJAR MARGO", "08032": "BANJAR BARU", "08040": "GEDUNG AJI", "08041": "PENAWAR AJI", "08042": "MERAKSA AJI", "08050": "MENGGALA", "08051": "PENAWAR TAMA", "09060": "NEGERI KATON", "09070": "TEGINENENG", "09040": "WAY LIMA", "09022": "WAY RATAI", "09030": "KEDONDONG", "09031": "WAY KHILAU", "09050": "GEDUNG TATAAN", "09021": "TELUK PANDAN", "09020": "PADANG CERMIN", "09010": "PUNDUH PIDADA", "09011": "MARGA PUNDUH", "10070": "PRINGSEWU", "10050": "GADING REJO", "10030": "PAGELARAN", "10010": "PARDASUKA", "10020": "AMBARAWA", "10031": "PAGELARAN UTARA", "10040": "PRINGSEWU", "10060": "SUKOHARJO", "10080": "ADI LUWIH", "11070": "RAWAJITU UTARA", "11030": "PANCA JAYA", "11050": "MESUJI", "11040": "TANJUNG RAYA", "11060": "MESUJI TIMUR", "11010": "WAY SERDANG", "11020": "SIMPANG PEMATANG", "12020": "TUMI JAJAR", "12030": "TULANG BAWANG TENGAH", "12040": "PAGAR DEWA", "12050": "LAMBU KIBANG", "12060": "GUNUNG TERANG", "12061": "BATU PUTIH", "12010": "TULANG BAWANG UDIK", "12080": "WAY KENANGA", "12070": "GUNUNG AGUNG", "12000": "TULANG BAWANG TENGAH", "13090": "NGAMBUR", "13050": "WAY KRUI", "13080": "PESISIR SELATAN", "13110": "BANGKUNAT", "13040": "KARYA PENGGAWA", "13060": "PESISIR TENGAH", "13070": "KRUI SELATAN", "13100": "NGARAS", "13020": "PESISIR UTARA", "13030": "PULAU PISANG", "13010": "LEMONG", "71072": "LANGKAPURA", "71030": "PANJANG", "71092": "WAY HALIM", "71082": "TANJUNG SENANG", "71071": "KEMILING", "71060": "TANJUNG KARANG PUSAT", "71080": "KEDATON", "71091": "SUKABUMI", "71070": "TANJUNG KARANG BARAT", "71011": "TELUKBETUNG TIMUR", "71021": "BUMI WARAS", "71041": "KEDAMAIAN", "71090": "SUKARAME", "71081": "RAJABASA", "71010": "TELUK BETUNG BARAT", "71020": "TELUK BETUNG SELATAN", "71040": "TANJUNG KARANG TIMUR", "71050": "TELUK BETUNG UTARA", "71061": "ENGGAL", "71083": "LABUHAN RATU", "72022": "METRO PUSAT", "72021": "METRO TIMUR", "72012": "METRO BARAT", "72023": "METRO UTARA", "72011": "METRO SELATAN"};
+const STATUS={"APPROVED BY Pengawas":"selesai","EDITED BY Pengawas":"selesai","SUBMITTED BY Pencacah":"menunggu","SUBMITTED RESPONDENT":"menunggu","DRAFT":"proses","REJECTED BY Pengawas":"ditolak","REVOKED BY Pengawas":"ditolak","REJECTED BY Admin Kabupaten":"ditolak","OPEN":"belum"};
+const COLORS={selesai:"#1f9d6b",menunggu:"#e0a020",proses:"#3b74e0",ditolak:"#d8543f",belum:"#cdd5e2"};
+const ORDER=["selesai","menunggu","proses","ditolak","belum"];
+const fmt=n=>(n||0).toLocaleString("id-ID");
+const pct=(a,b)=>b?(100*a/b):0;
+const $=id=>document.getElementById(id);
+let STATE=null, TREND=[];
+/* header auth: kunci lama (JWT, diawali "eyJ") pakai Authorization Bearer;
+   kunci baru (sb_publishable / sb_secret) cukup lewat apikey saja */
+function sbHeaders(key,extra){const h=Object.assign({apikey:key},extra||{});
+  if(key&&key.indexOf("eyJ")===0)h["Authorization"]="Bearer "+key;return h;}
+
+/* ---------- CSV parser (robust, tanpa library) ---------- */
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+  const rows=[];let f="",row=[],q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c=='"'){if(text[i+1]=='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else{if(c=='"')q=true;else if(c==','){row.push(f);f="";}
+      else if(c=='\n'){row.push(f);rows.push(row);row=[];f="";}
+      else if(c=='\r'){}else f+=c;}}
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  const head=rows.shift().map(h=>h.trim());
+  return rows.filter(r=>r.length>1).map(r=>{const o={};head.forEach((h,i)=>o[h]=r[i]);return o;});
+}
+
+/* ---------- agregasi dari CSV mentah FASIH ---------- */
+function aggregate(records){
+  const users={};
+  for(const r of records){const uid=r.userId;if(!uid)continue;
+    const code=String(r.regionCode||""),kc=code.slice(2,4);
+    const st=STATUS[r.status]||"belum",cnt=+r.count||0;
+    if(!users[uid])users[uid]={target:+r.userTotal||0,kab:kc,
+      email:(r.email||r.username||uid),b:{selesai:0,menunggu:0,proses:0,ditolak:0,belum:0}};
+    users[uid].b[st]+=cnt;}
+  return buildState(users);
+}
+/* ---------- bangun state dari snapshot Supabase ---------- */
+function fromSnapshot(rows){
+  const users={};
+  for(const r of rows){users[r.userid]={target:+r.target||0,kab:r.kab_code,email:r.email||r.userid,
+    b:{selesai:+r.selesai||0,menunggu:+r.menunggu||0,proses:+r.proses||0,ditolak:+r.ditolak||0,belum:+r.belum||0}};}
+  return buildState(users);
+}
+function buildState(users){
+  const kabs={};
+  for(const uid in users){const u=users[uid],kc=u.kab;
+    if(!kabs[kc])kabs[kc]={code:kc,name:KAB[kc]||("["+kc+"]"),petugas:0,target:0,
+      b:{selesai:0,menunggu:0,proses:0,ditolak:0,belum:0},users:[]};
+    const k=kabs[kc];k.petugas++;k.target+=u.target;
+    for(const s of ORDER)k.b[s]+=u.b[s];k.users.push(u);}
+  const prov={petugas:0,target:0,b:{selesai:0,menunggu:0,proses:0,ditolak:0,belum:0}};
+  for(const kc in kabs){const k=kabs[kc];prov.petugas+=k.petugas;prov.target+=k.target;
+    for(const s of ORDER)prov.b[s]+=k.b[s];}
+  return {users,kabs:Object.values(kabs),prov};
+}
+
+function ribbonHTML(b,total){
+  total=total||ORDER.reduce((a,s)=>a+b[s],0)||1;
+  return ORDER.map(s=>{const w=100*b[s]/total;if(w<=0)return"";
+    return '<i title="'+s+': '+fmt(b[s])+' ('+w.toFixed(1)+'%)" style="width:'+w+'%;background:'+COLORS[s]+'"></i>';}).join("");
+}
+const pctClass=p=>p<1?"lo":p<3?"mid":"hi";
+
+function render(){
+  const {prov}=STATE;
+  $("app").classList.remove("hide");$("drop").classList.add("hide");
+  const selP=pct(prov.b.selesai,prov.target),touched=prov.target-prov.b.belum;
+  $("kpis").innerHTML=`
+    <div class="kpi"><div class="lab">PETUGAS PENCACAH</div><div class="val mono">${fmt(prov.petugas)}</div><div class="sub2">di ${STATE.kabs.length} kab/kota</div></div>
+    <div class="kpi k-bel"><div class="lab">TARGET DOKUMEN</div><div class="val mono">${fmt(prov.target)}</div><div class="sub2">total beban cacah</div></div>
+    <div class="kpi k-sel"><div class="lab">SELESAI (DISETUJUI)</div><div class="val mono">${fmt(prov.b.selesai)}</div><div class="sub2">${selP.toFixed(2)}% dari target</div></div>
+    <div class="kpi k-men"><div class="lab">MENUNGGU VALIDASI</div><div class="val mono">${fmt(prov.b.menunggu)}</div><div class="sub2">siap diperiksa pengawas</div></div>
+    <div class="kpi k-pro"><div class="lab">SUDAH TERSENTUH</div><div class="val mono">${pct(touched,prov.target).toFixed(1)}%</div><div class="sub2">${fmt(touched)} dokumen mulai dikerjakan</div></div>`;
+  $("provrib").innerHTML=ribbonHTML(prov.b,prov.target);
+  STATE.kabs.forEach(k=>k.pct=pct(k.b.selesai,k.target));
+  drawKab("pct",true);
+  $("ftright").textContent="Diperbarui "+new Date().toLocaleString("id-ID");
+  renderTrend();
+}
+
+let sortKey="pct",sortAsc=true;
+function drawKab(key,forceAsc){
+  const {kabs}=STATE;
+  if(key){if(key===sortKey&&forceAsc===undefined)sortAsc=!sortAsc;else sortAsc=(forceAsc!==undefined?forceAsc:(key==="name"));sortKey=key;}
+  const val=k=>key==="name"?k.name:(k[sortKey]!==undefined?k[sortKey]:k.b[sortKey]);
+  const arr=[...kabs].sort((a,b)=>{let x=val(a),y=val(b);
+    if(typeof x==="string")return sortAsc?x.localeCompare(y):y.localeCompare(x);return sortAsc?x-y:y-x;});
+  $("kabbody").innerHTML=arr.map((k,i)=>`<tr class="kabrow" data-kab="${k.code}">
+    <td><span class="rank">${i+1}</span></td><td><b>${k.name}</b></td>
+    <td class="num mono">${fmt(k.petugas)}</td><td class="num mono">${fmt(k.target)}</td>
+    <td class="num mono">${fmt(k.b.selesai)}</td><td class="num mono">${fmt(k.b.menunggu)}</td>
+    <td><div class="mini">${ribbonHTML(k.b,k.target)}</div></td>
+    <td class="num mono pct ${pctClass(k.pct)}">${k.pct.toFixed(2)}%</td></tr>`).join("");
+  document.querySelectorAll(".kabrow").forEach(r=>r.onclick=()=>drill(r.dataset.kab));
+}
+
+function drill(code){
+  const k=STATE.kabs.find(x=>x.code===code);if(!k)return;
+  const users=[...k.users].map(u=>({...u,pc:pct(u.b.selesai,u.target)})).sort((a,b)=>a.pc-b.pc);
+  const d=$("drill");d.style.display="block";
+  d.innerHTML=`<div class="dpanel">
+    <div class="dhead"><h4>${k.name} — ${fmt(k.petugas)} petugas · ${k.pct.toFixed(2)}% selesai</h4>
+      <span class="x" id="dx">Tutup ✕</span></div>
+    <div class="search"><input id="psearch" placeholder="Cari petugas (email)…"/></div>
+    <div class="scroll"><table><thead><tr><th>#</th><th>Petugas</th><th class="num">Target</th>
+      <th class="num">Selesai</th><th class="num">Menunggu</th><th style="min-width:150px">Capaian</th><th class="num">% Selesai</th></tr></thead>
+      <tbody id="pbody"></tbody></table></div></div>`;
+  const draw=(q="")=>{const f=users.filter(u=>!q||u.email.toLowerCase().includes(q.toLowerCase()));
+    $("pbody").innerHTML=f.length?f.map((u,i)=>`<tr><td>${i+1}</td><td>${u.email}</td>
+      <td class="num mono">${fmt(u.target)}</td><td class="num mono">${fmt(u.b.selesai)}</td>
+      <td class="num mono">${fmt(u.b.menunggu)}</td><td><div class="mini">${ribbonHTML(u.b,u.target)}</div></td>
+      <td class="num mono pct ${pctClass(u.pc)}">${u.pc.toFixed(1)}%</td></tr>`).join("")
+      :'<tr><td colspan="7" class="empty">Tidak ada petugas cocok.</td></tr>';};
+  draw();
+  $("psearch").oninput=e=>draw(e.target.value);
+  $("dx").onclick=()=>{d.style.display="none";};
+  d.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ---------- grafik tren (SVG murni) ---------- */
+function renderTrend(){
+  if(!TREND.length){$("trendsec").classList.add("hide");return;}
+  const byDate={};
+  for(const r of TREND){const t=r.tanggal;if(!byDate[t])byDate[t]={sel:0,tgt:0};
+    byDate[t].sel+=+r.selesai||0;byDate[t].tgt+=+r.target||0;}
+  const days=Object.keys(byDate).sort().map(t=>({t,p:pct(byDate[t].sel,byDate[t].tgt),sel:byDate[t].sel}));
+  if(days.length<1){$("trendsec").classList.add("hide");return;}
+  $("trendsec").classList.remove("hide");
+  const last=days[days.length-1],prev=days.length>1?days[days.length-2]:null;
+  const delta=prev?(last.p-prev.p):null;
+  $("trendsum").innerHTML=`
+    <div>% selesai terkini<b class="mono">${last.p.toFixed(2)}%</b></div>
+    <div>Perubahan vs hari sebelumnya<b class="mono">${delta===null?"—":(delta>=0?"+":"")+delta.toFixed(2)+" poin"}</b></div>
+    <div>Hari terpantau<b class="mono">${days.length}</b></div>`;
+  const W=860,H=220,pad=36,maxP=Math.max(...days.map(d=>d.p),0.1)*1.25;
+  const X=i=>pad+(days.length<=1?0:i*(W-2*pad)/(days.length-1));
+  const Y=p=>H-pad-(p/maxP)*(H-2*pad);
+  const pts=days.map((d,i)=>[X(i),Y(d.p)]);
+  const line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const area=line+` L ${X(days.length-1).toFixed(1)} ${H-pad} L ${pad} ${H-pad} Z`;
+  let grid="";for(let g=0;g<=4;g++){const yy=pad+g*(H-2*pad)/4,vv=maxP*(1-g/4);
+    grid+=`<line x1="${pad}" y1="${yy}" x2="${W-pad}" y2="${yy}" stroke="#eef1f6"/>
+      <text x="${pad-6}" y="${yy+3}" text-anchor="end" font-size="10" fill="#8090ab">${vv.toFixed(1)}%</text>`;}
+  const dots=pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="#1f4fd8"><title>${days[i].t}: ${days[i].p.toFixed(2)}%</title></circle>`).join("");
+  const lab=days.map((d,i)=>(i===0||i===days.length-1||days.length<=6)?`<text x="${X(i).toFixed(1)}" y="${H-pad+15}" text-anchor="middle" font-size="9.5" fill="#8090ab">${d.t.slice(5)}</text>`:"").join("");
+  $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">
+    ${grid}<path d="${area}" fill="rgba(31,79,216,.10)"/>
+    <path d="${line}" fill="none" stroke="#1f4fd8" stroke-width="2.2"/>${dots}${lab}</svg>`;
+}
+
+/* ---------- Supabase: muat & kirim ---------- */
+const sbReady=()=>SUPABASE_URL&&SUPABASE_ANON_KEY;
+function setStatus(t){$("status").textContent=t||"";}
+
+async function loadSupabase(){
+  if(!sbReady()){alert("Isi SUPABASE_URL & SUPABASE_ANON_KEY di bagian atas file dulu.");return;}
+  setStatus("Memuat data dari Supabase…");
+  try{
+    const H=sbHeaders(SUPABASE_ANON_KEY);
+    const s=await fetch(SUPABASE_URL+"/rest/v1/snapshot?select=*",{headers:H});
+    if(!s.ok)throw new Error("snapshot HTTP "+s.status);
+    const snap=await s.json();
+    if(!snap.length){setStatus("Belum ada data di Supabase. Kirim data dulu.");return;}
+    STATE=fromSnapshot(snap);
+    const tr=await fetch(SUPABASE_URL+"/rest/v1/tren_harian?select=*&order=tanggal",{headers:H});
+    TREND=tr.ok?await tr.json():[];
+    $("hmeta").innerHTML=`<span>Sumber: <b>Supabase (live)</b></span>
+      <span>Petugas: <b>${fmt(STATE.prov.petugas)}</b></span><span>Wilayah: <b>${STATE.kabs.length} kab/kota</b></span>`;
+    render();setStatus("Data live dimuat dari Supabase.");
+  }catch(e){setStatus("Gagal memuat: "+e.message);alert("Gagal memuat dari Supabase:\n"+e.message);}
+}
+
+async function pushSupabase(){
+  if(!STATE){alert("Muat data CSV dulu sebelum mengirim.");return;}
+  if(!sbReady()){alert("Isi SUPABASE_URL & key dulu di bagian atas file.");return;}
+  const writeKey=SUPABASE_WRITE_KEY||SUPABASE_ANON_KEY;
+  if(!SUPABASE_WRITE_KEY&&!confirm("SUPABASE_WRITE_KEY kosong; akan memakai anon key. Ini hanya berhasil bila Anda mengaktifkan policy tulis untuk anon (kurang aman). Lanjut?"))return;
+  const today=new Date().toISOString().slice(0,10);
+  const snap=Object.entries(STATE.users).map(([uid,u])=>({userid:uid,email:u.email,kab_code:u.kab,
+    kab_name:KAB[u.kab]||u.kab,target:u.target,selesai:u.b.selesai,menunggu:u.b.menunggu,
+    proses:u.b.proses,ditolak:u.b.ditolak,belum:u.b.belum,updated_at:new Date().toISOString()}));
+  const tren=STATE.kabs.map(k=>({tanggal:today,kab_code:k.code,kab_name:k.name,target:k.target,
+    selesai:k.b.selesai,menunggu:k.b.menunggu,proses:k.b.proses,belum:k.b.belum}));
+  const H=sbHeaders(writeKey,{"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"});
+  $("pushsb").disabled=true;
+  try{
+    setStatus("Mengirim snapshot ("+snap.length+" petugas)…");
+    for(let i=0;i<snap.length;i+=2000){
+      const r=await fetch(SUPABASE_URL+"/rest/v1/snapshot",{method:"POST",headers:H,body:JSON.stringify(snap.slice(i,i+2000))});
+      if(!r.ok)throw new Error("snapshot HTTP "+r.status+" "+(await r.text()).slice(0,120));
+      setStatus("Mengirim snapshot… "+Math.min(i+2000,snap.length)+"/"+snap.length);
+    }
+    setStatus("Mengirim tren harian…");
+    const rt=await fetch(SUPABASE_URL+"/rest/v1/tren_harian",{method:"POST",headers:H,body:JSON.stringify(tren)});
+    if(!rt.ok)throw new Error("tren HTTP "+rt.status+" "+(await rt.text()).slice(0,120));
+    setStatus("Selesai dikirim ke Supabase ("+snap.length+" petugas, "+tren.length+" baris tren "+today+").");
+    alert("Berhasil dikirim ke Supabase.\nSnapshot: "+snap.length+" petugas (ditimpa)\nTren: "+tren.length+" baris untuk "+today);
+    TREND=TREND.filter(x=>x.tanggal!==today).concat(tren);renderTrend();
+  }catch(e){setStatus("Gagal mengirim: "+e.message);alert("Gagal mengirim ke Supabase:\n"+e.message+"\n\nCek: tabel sudah dibuat? policy/role benar?");}
+  finally{$("pushsb").disabled=false;}
+}
+
+/* ---------- intake file ---------- */
+function ingest(text,isXlsx){
+  if(isXlsx){alert("Untuk .xlsx, ekspor dulu ke CSV — atau pakai CSV bawaan bookmarklet.");return;}
+  const recs=parseCSV(text);
+  if(!recs.length||!("userId"in recs[0])){alert("Format tak dikenali. Pastikan CSV flat FASIH (ada kolom userId, status, count).");return;}
+  STATE=aggregate(recs);
+  $("hmeta").innerHTML=`<span>Sumber: <b>file CSV</b></span><span>Petugas: <b>${fmt(STATE.prov.petugas)}</b></span>
+    <span>Baris: <b>${fmt(recs.length)}</b></span><span>Wilayah: <b>${STATE.kabs.length} kab/kota</b></span>`;
+  render();setStatus("Memuat "+fmt(recs.length)+" baris dari file. Klik \"Kirim ke Supabase\" untuk menyimpan.");
+}
+const fileInput=$("file"),drop=$("drop");
+drop.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{const f=e.target.files[0];if(f)readFile(f);};
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(f)readFile(f);});
+function readFile(f){const x=f.name.toLowerCase().endsWith(".xlsx");const r=new FileReader();r.onload=()=>ingest(r.result,x);r.readAsText(f);}
+
+document.querySelectorAll("#kabtab th[data-s]").forEach(th=>th.onclick=()=>drawKab(th.dataset.s));
+$("exp").onclick=()=>{const head=["Kabupaten","Petugas","Target","Selesai","Menunggu","Proses","Ditolak","Belum","%Selesai"];
+  const rows=STATE.kabs.map(k=>[k.name,k.petugas,k.target,k.b.selesai,k.b.menunggu,k.b.proses,k.b.ditolak,k.b.belum,k.pct.toFixed(2)]);
+  const csv="\uFEFF"+[head,...rows].map(r=>r.join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="rekap_kabupaten_se2026.csv";a.click();};
+$("prn").onclick=()=>window.print();
+$("loadsb").onclick=loadSupabase;
+$("pushsb").onclick=pushSupabase;
+
+/* sembunyikan tombol Supabase bila belum dikonfigurasi; auto-muat bila siap */
+if(!sbReady()){$("loadsb").classList.add("hide");}
+else{ loadSupabase(); }
+</script>
+</body>
+</html>
